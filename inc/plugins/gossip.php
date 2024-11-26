@@ -1,39 +1,42 @@
 <?php
 
 // Disallow direct access to this file for security reasons
-if(!defined("IN_MYBB"))
-{
+if (!defined("IN_MYBB")) {
     die("Direct initialization of this file is not allowed.");
 }
 
-if(class_exists('MybbStuff_MyAlerts_AlertTypeManager')) {
+if (class_exists('MybbStuff_MyAlerts_AlertTypeManager')) {
     $plugins->add_hook("global_start", "gossip_alerts");
 }
+
+$plugins->add_hook('global_start', 'gossip_global');
+$plugins->add_hook('global_intermediate', 'gossip_index');
+$plugins->add_hook('modcp_nav', 'gossip_nav');
+$plugins->add_hook('member_profile_start', 'gossip_member_profile');
 
 
 
 function gossip_info()
 {
     return array(
-        "name"			=> "Gerüchteküche",
-        "description"	=> "Mit diesen Plugin können Charaktere Gerüchte in die Welt setzen.",
-        "website"		=> "",
-        "author"		=> "Ales",
-        "authorsite"	=> "https://github.com/Ales12",
-        "version"		=> "1.0",
-        "guid" 			=> "",
-        "codename"		=> "",
+        "name" => "Gerüchteküche",
+        "description" => "Mit diesen Plugin können Charaktere Gerüchte in die Welt setzen.",
+        "website" => "",
+        "author" => "Ales",
+        "authorsite" => "https://github.com/Ales12",
+        "version" => "1.0",
+        "guid" => "",
+        "codename" => "",
         "compatibility" => "*"
     );
 }
 
 function gossip_install()
 {
-    global  $db, $cache;
+    global $db, $cache;
     //Datenbank erstellen
-    if($db->engine=='mysql'||$db->engine=='mysqli')
-    {
-        $db->query("CREATE TABLE `".TABLE_PREFIX."gossip` (
+    if ($db->engine == 'mysql' || $db->engine == 'mysqli') {
+        $db->query("CREATE TABLE `" . TABLE_PREFIX . "gossip` (
           `gossip_id` int(10) NOT NULL auto_increment,
           `gossip_text` varchar(500) CHARACTER SET utf8 NOT NULL,
           `gossip_victims` varchar(500) CHARACTER SET utf8 NOT NULL,
@@ -42,7 +45,7 @@ function gossip_install()
         `gossip_date` date NOT NULL,
           `gossip_ok` int(10) NOT NULL  default '0',
           PRIMARY KEY (`gossip_id`)
-        ) ENGINE=MyISAM".$db->build_create_table_collation());
+        ) ENGINE=MyISAM" . $db->build_create_table_collation());
 
     }
 
@@ -84,12 +87,11 @@ function gossip_install()
             'description' => 'Wer soll das Gerücht streuen? Trage hier einen extra Namen ein, wenn die gestreuten Charaktere anonym bleiben sollen:',
             'optionscode' => 'text',
             'value' => '',
-            'disporder' =>3
+            'disporder' => 3
         ),
     );
 
-    foreach($setting_array as $name => $setting)
-    {
+    foreach ($setting_array as $name => $setting) {
         $setting['name'] = $name;
         $setting['gid'] = $gid;
 
@@ -396,6 +398,20 @@ if(use_xmlhttprequest == "1")
     $db->insert_query("templates", $insert_array);
 
     $insert_array = array(
+        'title' => 'gossip_profile',
+        'template' => $db->escape_string('	<div class="gossip_about">
+	{$gossip_allvictims}
+	</div>
+	<div class="gossip_rumour">
+		{$rumour}
+	</div>'),
+        'sid' => '-1',
+        'version' => '',
+        'dateline' => TIME_NOW
+    );
+    $db->insert_query("templates", $insert_array);
+
+    $insert_array = array(
         'title' => 'gossip_options',
         'template' => $db->escape_string('// <a href="misc.php?action=gossip&deletegossip={$gossip_id}">{$lang->gossip_delete}</a> <a onclick="$(\'#edit_{$gossip_id}\').modal({ fadeDuration: 250, keepelement: true, zIndex: (typeof modal_zindex !== \'undefined\' ? modal_zindex : 9999) }); return false;" style="cursor: pointer;">{$lang->gossip_edit}</a>
                                             <div class=\'modal\' id="edit_{$gossip_id}" style=\'display: none;\'>{$gossip_edit}</div>'),
@@ -410,7 +426,7 @@ if(use_xmlhttprequest == "1")
         'name' => 'gossip.css',
         'tid' => 1,
         'attachedto' => '',
-        "stylesheet" =>    '.form_flex{
+        "stylesheet" => '.form_flex{
 	display: flex;
 	flex-wrap: wrap;
 	justify-content: center;
@@ -533,15 +549,14 @@ padding: 8px;
         update_theme_stylesheet_list($theme['tid']);
     }
 
-// Don't forget this!
+    // Don't forget this!
     rebuild_settings();
 }
 
 function gossip_is_installed()
 {
     global $db;
-    if($db->table_exists("gossip"))
-    {
+    if ($db->table_exists("gossip")) {
         return true;
     }
     return false;
@@ -569,10 +584,10 @@ function gossip_uninstall()
 
     $db->delete_query("templates", "title LIKE '%gossip%'");
 
-    require_once MYBB_ADMIN_DIR."inc/functions_themes.php";
+    require_once MYBB_ADMIN_DIR . "inc/functions_themes.php";
     $db->delete_query("themestylesheets", "name = 'gossip.css'");
     $query = $db->simple_select("themes", "tid");
-    while($theme = $db->fetch_array($query)) {
+    while ($theme = $db->fetch_array($query)) {
         update_theme_stylesheet_list($theme['tid']);
     }
 
@@ -582,7 +597,7 @@ function gossip_uninstall()
 function gossip_activate()
 {
     global $db, $cache;
-    if(class_exists('MybbStuff_MyAlerts_AlertTypeManager')) {
+    if (class_exists('MybbStuff_MyAlerts_AlertTypeManager')) {
         $alertTypeManager = MybbStuff_MyAlerts_AlertTypeManager::getInstance();
 
         if (!$alertTypeManager) {
@@ -613,10 +628,10 @@ function gossip_activate()
 
     }
 
-    require MYBB_ROOT."/inc/adminfunctions_templates.php";
-    find_replace_templatesets("modcp_nav_users", "#".preg_quote('{$nav_ipsearch}')."#i", '{$nav_ipsearch}{$gossip_nav}');
-    find_replace_templatesets("header", "#".preg_quote('{$pm_notice}')."#i", '{$newgossip_alert}{$pm_notice}');
-    find_replace_templatesets("index", "#".preg_quote('{$boardstats}')."#i", '{$boardstats}{$gossip_index}');
+    require MYBB_ROOT . "/inc/adminfunctions_templates.php";
+    find_replace_templatesets("modcp_nav_users", "#" . preg_quote('{$nav_ipsearch}') . "#i", '{$nav_ipsearch}{$gossip_nav}');
+    find_replace_templatesets("header", "#" . preg_quote('{$pm_notice}') . "#i", '{$newgossip_alert}{$pm_notice}');
+    find_replace_templatesets("index", "#" . preg_quote('{$boardstats}') . "#i", '{$boardstats}{$gossip_index}');
 }
 
 function gossip_deactivate()
@@ -635,23 +650,25 @@ function gossip_deactivate()
         $alertTypeManager->deleteByCode('gossip_refuse');
     }
 
-    require MYBB_ROOT."/inc/adminfunctions_templates.php";
-    find_replace_templatesets("modcp_nav_users", "#".preg_quote('{$gossip_nav}')."#i", '', 0);
-    find_replace_templatesets("header", "#".preg_quote('{$newgossip_alert}')."#i", '', 0);
-    find_replace_templatesets("index", "#".preg_quote('{$gossip_index}')."#i", '', 0);
+    require MYBB_ROOT . "/inc/adminfunctions_templates.php";
+    find_replace_templatesets("modcp_nav_users", "#" . preg_quote('{$gossip_nav}') . "#i", '', 0);
+    find_replace_templatesets("header", "#" . preg_quote('{$newgossip_alert}') . "#i", '', 0);
+    find_replace_templatesets("index", "#" . preg_quote('{$gossip_index}') . "#i", '', 0);
 }
 
 // ADMIN-CP PEEKER
 $plugins->add_hook('admin_config_settings_change', 'gossip_settings_change');
 $plugins->add_hook('admin_settings_print_peekers', 'gossip_settings_peek');
-function gossip_settings_change(){
+function gossip_settings_change()
+{
     global $db, $mybb, $gossip_settings_peeker;
 
     $result = $db->simple_select('settinggroups', 'gid', "name='gossip'", array("limit" => 2));
     $group = $db->fetch_array($result);
     $gossip_settings_peeker = ($mybb->input['gid'] == $group['gid']) && ($mybb->request_method != 'post');
 }
-function gossip_settings_peek(&$peekers){
+function gossip_settings_peek(&$peekers)
+{
     global $mybb, $gossip_settings_peeker;
 
     if ($gossip_settings_peeker) {
@@ -669,12 +686,11 @@ function gossip_usergroup_permission()
 {
     global $mybb, $lang, $form, $form_container, $run_module;
 
-    if($run_module == 'user' && !empty($form_container->_title) & !empty($lang->misc) & $form_container->_title == $lang->misc)
-    {
+    if ($run_module == 'user' && !empty($form_container->_title) & !empty($lang->misc) & $form_container->_title == $lang->misc) {
         $gossip_options = array(
             $form->generate_check_box('canaddgossip', 1, "kann ein Gerücht in die Welt setzen?", array("checked" => $mybb->input['canaddgossip'])),
         );
-        $form_container->output_row("Einstellung für Gerüchteküche", "", "<div class=\"group_settings_bit\">".implode("</div><div class=\"group_settings_bit\">", $gossip_options)."</div>");
+        $form_container->output_row("Einstellung für Gerüchteküche", "", "<div class=\"group_settings_bit\">" . implode("</div><div class=\"group_settings_bit\">", $gossip_options) . "</div>");
     }
 }
 
@@ -694,9 +710,10 @@ $plugins->add_hook('misc_start', 'gossip_misc');
  */
 function gossip_misc()
 {
-    global $mybb, $templates, $db, $lang, $header, $headerinclude, $parser, $footer, $form_group,$opengossip_alert, $rumour,$rumourmonger, $rumour_date, $gossip_allvictims, $gossip_options;
+    global $mybb, $templates, $db, $lang, $header, $headerinclude, $parser, $footer, $form_group, $opengossip_alert, $rumour, $rumourmonger, $rumour_date, $gossip_allvictims, $gossip_options;
     $lang->load('gossip');
-    require_once MYBB_ROOT."inc/class_parser.php";;
+    require_once MYBB_ROOT . "inc/class_parser.php";
+    ;
     $parser = new postParser;
     // Do something, for example I'll create a page using the hello_world_template
     $options = array(
@@ -710,21 +727,20 @@ function gossip_misc()
     );
 
 
-    if($mybb->get_input('action') == 'gossip')
-    {
+    if ($mybb->get_input('action') == 'gossip') {
         // Do something, for example I'll create a page using the hello_world_template
 
         // Add a breadcrumb
         add_breadcrumb($lang->gossip_main, "misc.php?action=gossip");
 
         // Wenn die Usergruppe die Erlaubnis hat, Gerüchte zu streuen, dann bitte diesen Part ausführen.
-        if($mybb->usergroup['canaddgossip'] == 1){
+        if ($mybb->usergroup['canaddgossip'] == 1) {
             $gossip_from = $mybb->user['uid'];
             // soll es gruppen geben, welche speciell angesprochen werden sollen, dann bitte hier abgehen :D
-            if($mybb->settings['gossip_group'] == 1){
+            if ($mybb->settings['gossip_group'] == 1) {
                 $groups = explode(", ", $mybb->settings['gossip_groupname']);
 
-                foreach ($groups as $group){
+                foreach ($groups as $group) {
                     $gossip_group .= "<option value='{$group}'>{$group}</option>";
                 }
 
@@ -736,7 +752,7 @@ function gossip_misc()
 	</div>";
             }
             // unser wundervolles Formular
-            eval("\$gossip_formular = \"".$templates->get("gossip_formular")."\";");
+            eval ("\$gossip_formular = \"" . $templates->get("gossip_formular") . "\";");
 
             // Und ab mit dem Gerücht in die Datenbank. Gerüchte müssen immer vorher vom Team abgesegnet werden, weswegen es dauern kann.
             if (isset($mybb->input['add_gossip'])) {
@@ -755,39 +771,43 @@ function gossip_misc()
             }
         }
 
-        $gossip_open = $db->fetch_field($db->simple_select("gossip", "COUNT(*) as open_gossip",
-            "gossip_ok='0' and gossip_from = '{$gossip_from}'", array("limit" => 1)),"open_gossip");
+        $gossip_open = $db->fetch_field($db->simple_select(
+            "gossip",
+            "COUNT(*) as open_gossip",
+            "gossip_ok='0' and gossip_from = '{$gossip_from}'",
+            array("limit" => 1)
+        ), "open_gossip");
 
 
         $count_opengossip = $gossip_open;
 
-        if($count_opengossip > 0){
-            $opengossip_alert ="<div class='red_alert'>{$lang->gossip_open}</div>";
+        if ($count_opengossip > 0) {
+            $opengossip_alert = "<div class='red_alert'>{$lang->gossip_open}</div>";
         }
 
         // Dann geben wir den Spaß doch mal aus :D
 
         $all_gossip = $db->query("SELECT *
-        FROM ".TABLE_PREFIX."gossip g
-        LEFT JOIN ".TABLE_PREFIX."users u
+        FROM " . TABLE_PREFIX . "gossip g
+        LEFT JOIN " . TABLE_PREFIX . "users u
         on (g.gossip_from = u.uid)
         where gossip_ok = 1
         order by gossip_date ASC
         ");
 
-        while($gossip = $db->fetch_array($all_gossip)){
+        while ($gossip = $db->fetch_array($all_gossip)) {
             $gossip_options = "";
             $gossip_id = "";
 
             $gossip_id = $gossip['gossip_id'];
-            eval("\$gossip_edit = \"".$templates->get("gossip_edit")."\";");
+            eval ("\$gossip_edit = \"" . $templates->get("gossip_edit") . "\";");
 
-            if($mybb->user['uid'] != 0){
-                if($mybb->usergroup['canmodcp'] == 1) {
-                    if($mybb->settings['gossip_group'] == 1){
+            if ($mybb->user['uid'] != 0) {
+                if ($mybb->usergroup['canmodcp'] == 1) {
+                    if ($mybb->settings['gossip_group'] == 1) {
                         $groups = explode(", ", $mybb->settings['gossip_groupname']);
 
-                        foreach ($groups as $group){
+                        foreach ($groups as $group) {
                             $gossip_group .= "<option value='{$group}'>{$group}</option>";
                         }
 
@@ -799,34 +819,34 @@ function gossip_misc()
             </select>
                 </div>";
                     }
-                    eval("\$gossip_options = \"".$templates->get("gossip_options")."\";");
+                    eval ("\$gossip_options = \"" . $templates->get("gossip_options") . "\";");
                 }
             }
 
 
 
-            $gossip_victims = explode(",",$gossip['gossip_victims']);
+            $gossip_victims = explode(",", $gossip['gossip_victims']);
             $all_victims = array();
             $count_victim = 0;
-            if(empty($mybb->settings['gossip_from'])){
+            if (empty($mybb->settings['gossip_from'])) {
                 $username = format_name($gossip['username'], $gossip['usergroup'], $gossip['displaygroup']);
                 $rumourmonger = build_profile_link($username, $gossip['uid']);
-            } else{
+            } else {
                 $rumourmonger = $mybb->settings['gossip_from'];
             }
 
 
-            foreach ($gossip_victims as $gossip_victim){
+            foreach ($gossip_victims as $gossip_victim) {
                 $count_victim++;
                 $gossip_victim = $db->escape_string($gossip_victim);
                 $chara_query = $db->simple_select("users", "*", "username ='$gossip_victim'");
                 $victim = $db->fetch_array($chara_query);
 
-                if($mybb->user['uid'] == $victim['uid']){
-                    if($mybb->settings['gossip_group'] == 1){
+                if ($mybb->user['uid'] == $victim['uid']) {
+                    if ($mybb->settings['gossip_group'] == 1) {
                         $groups = explode(", ", $mybb->settings['gossip_groupname']);
 
-                        foreach ($groups as $group){
+                        foreach ($groups as $group) {
                             $gossip_group .= "<option value='{$group}'>{$group}</option>";
                         }
 
@@ -838,7 +858,7 @@ function gossip_misc()
             </select>
                 </div>";
                     }
-                    eval("\$gossip_options = \"".$templates->get("gossip_options")."\";");
+                    eval ("\$gossip_options = \"" . $templates->get("gossip_options") . "\";");
                 }
 
                 $username = format_name($victim['username'], $victim['usergroup'], $victim['displaygroup']);
@@ -846,9 +866,9 @@ function gossip_misc()
                 array_push($all_victims, $victimname);
             }
 
-            if($count_victim > 1) {
+            if ($count_victim > 1) {
                 $gossip_allvictims = implode(" und ", $all_victims);
-            } else{
+            } else {
                 $gossip_allvictims = implode(", ", $all_victims);
             }
 
@@ -858,7 +878,7 @@ function gossip_misc()
 
 
 
-            eval("\$gossip_bit .= \"".$templates->get("gossip_bit")."\";");
+            eval ("\$gossip_bit .= \"" . $templates->get("gossip_bit") . "\";");
         }
 
         // Gossip Bearbeiten
@@ -866,12 +886,12 @@ function gossip_misc()
 
         // Gossip löschen
         $delete = $mybb->input['deletegossip'];
-        if($delete){
+        if ($delete) {
             $db->delete_query("gossip", "gossip_id = '{$delete}'");
-            redirect ("misc.php?action=gossip");
+            redirect("misc.php?action=gossip");
         }
 
-        if(isset($mybb->input['edit_gossip'])){
+        if (isset($mybb->input['edit_gossip'])) {
 
             $gossip_id = $mybb->input['gossip_id'];
 
@@ -884,11 +904,11 @@ function gossip_misc()
             );
 
             $db->update_query("gossip", $edit_gossip, "gossip_id = '{$gossip_id}'");
-            redirect ("misc.php?action=gossip");
+            redirect("misc.php?action=gossip");
         }
 
         // Using the misc_help template for the page wrapper
-        eval("\$page = \"".$templates->get("gossip")."\";");
+        eval ("\$page = \"" . $templates->get("gossip") . "\";");
         output_page($page);
     }
 }
@@ -896,15 +916,19 @@ function gossip_misc()
 
 // admins müssen ja wissen, das ein neues Gerücht im Lande ist
 
-$plugins->add_hook('global_start', 'gossip_global');
 
-function gossip_global(){
+function gossip_global()
+{
     global $db, $templates, $mybb, $lang, $newgossip_alert;
     $lang->load('gossip');
-    $gossip_new = $db->fetch_field($db->simple_select("gossip", "COUNT(*) as new_gossip",
-        "gossip_ok='0'", array("limit" => 1)),"new_gossip");
+    $gossip_new = $db->fetch_field($db->simple_select(
+        "gossip",
+        "COUNT(*) as new_gossip",
+        "gossip_ok='0'",
+        array("limit" => 1)
+    ), "new_gossip");
 
-    if($mybb->usergroup['canmodcp'] == 1) {
+    if ($mybb->usergroup['canmodcp'] == 1) {
         if ($gossip_new > 0) {
             $newgossip_alert = "<div class='red_alert'><a href='modcp.php?action=gossip'>{$lang->gossip_modcp_newalert}</a></div>";
         }
@@ -914,12 +938,13 @@ function gossip_global(){
 
 
 // Wir möchten das ganze ja noch Random auf dem Index haben
-$plugins->add_hook('global_intermediate', 'gossip_index');
 
-function gossip_index(){
+function gossip_index()
+{
     global $db, $templates, $lang, $mybb, $parser, $gossip_index, $rumour;
     $lang->load('gossip');
-    require_once MYBB_ROOT . "inc/class_parser.php";;
+    require_once MYBB_ROOT . "inc/class_parser.php";
+    ;
     $parser = new postParser;
     $options = array(
         "allow_html" => 1,
@@ -937,9 +962,9 @@ function gossip_index(){
         WHERE gossip_ok = '1'
     "), "count_gossip");
 
-    $gossip_count =  $count;
-
-    if($gossip_count > 0) {
+    $gossip_count = $count;
+    $gossip_allvictims = "";
+    if ($gossip_count > 0) {
 
         $query = $db->query("SELECT *
         FROM " . TABLE_PREFIX . "gossip
@@ -954,6 +979,7 @@ function gossip_index(){
         $all_victims = array();
         $count_victim = 0;
 
+
         foreach ($gossip_victims as $gossip_victim) {
             $count_victim++;
             $gossip_victim = $db->escape_string($gossip_victim);
@@ -964,32 +990,93 @@ function gossip_index(){
             array_push($all_victims, $victimname);
         }
 
+
+
         if ($count_victim > 1) {
-            $gossip_allvictims = implode(" und ", $all_victims);
+            $gossip_allvictim = implode(" und ", $all_victims);
         } else {
-            $gossip_allvictims = implode(", ", $all_victims);
+            $gossip_allvictim = implode(", ", $all_victims);
         }
 
-        $gossip_allvictims = $lang->gossip_gossipabout.$gossip_allvictims;
+        $gossip_allvictims = $lang->gossip_gossipabout . $gossip_allvictim;
+
 
         $rumour = $parser->parse_message($gossip['gossip_text'], $options);
-    } else{
+    } else {
         $rumour = $lang->gossip_nogossip;
     }
 
-    eval("\$gossip_index .= \"" . $templates->get("gossip_index") . "\";");
+    eval ("\$gossip_index .= \"" . $templates->get("gossip_index") . "\";");
 
 
 }
 
+// profile
+
+function gossip_member_profile()
+{
+    global $db, $mybb, $templates, $memprofile, $parser, $lang, $gossip_profile;
+    require_once MYBB_ROOT . "inc/class_parser.php";
+    $lang->load('gossip');
+    $parser = new postParser;
+    $options = array(
+        "allow_html" => 1,
+        "allow_mycode" => 1,
+        "allow_smilies" => 1,
+        "allow_imgcode" => 1,
+        "filter_badwords" => 0,
+        "nl2br" => 1,
+        "allow_videocode" => 0
+    );
+
+    $charaprofile = "";
+    $charaprofile = $db->escape_string($memprofile['username']);
+    $query = $db->query("SELECT *
+    FROM " . TABLE_PREFIX . "gossip
+    WHERE gossip_ok = '1'
+    and gossip_victims like '%" . $charaprofile . "%'
+    ORDER BY RAND()
+    LIMIT 1
+");
+
+    while ($gossip = $db->fetch_array($query)) {
+        $gossip_victims = explode(",", $gossip['gossip_victims']);
+        $all_victims = array();
+        $count_victim = 0;
+
+
+        foreach ($gossip_victims as $gossip_victim) {
+            $count_victim++;
+            $gossip_victim = $db->escape_string($gossip_victim);
+            $chara_query = $db->simple_select("users", "*", "username ='$gossip_victim'");
+            $victim = $db->fetch_array($chara_query);
+            $username = format_name($victim['username'], $victim['usergroup'], $victim['displaygroup']);
+            $victimname = build_profile_link($username, $victim['uid']);
+            array_push($all_victims, $victimname);
+        }
+
+
+
+        if ($count_victim > 1) {
+            $gossip_allvictim = implode(" und ", $all_victims);
+        } else {
+            $gossip_allvictim = implode(", ", $all_victims);
+        }
+
+        $gossip_allvictims = $lang->gossip_gossipabout . $gossip_allvictim;
+        $rumour = $parser->parse_message($gossip['gossip_text'], $options);
+        eval ("\$gossip_profile .= \"" . $templates->get("gossip_profile") . "\";");
+    }
+}
+
 
 // Mod cp Navigation
-$plugins->add_hook('modcp_nav', 'gossip_nav');
 
-function gossip_nav(){
+function gossip_nav()
+{
     global $templates, $lang, $gossip_nav;
     $lang->load('gossip');
-    eval("\$gossip_nav = \"".$templates->get("gossip_modcp_nav")."\";");
+    eval ("\$gossip_nav = \"" . $templates->get("gossip_modcp_nav") . "\";");
 }
 
 
@@ -998,9 +1085,10 @@ $plugins->add_hook('modcp_start', 'gossip_modcp');
 // In the body of your plugin
 function gossip_modcp()
 {
-    global $mybb, $templates, $lang, $header, $headerinclude, $footer, $page, $db, $parser, $modcp_nav, $gossip_allvictims, $rumour, $rumour_date, $rumourmonger,$gossip_id;
+    global $mybb, $templates, $lang, $header, $headerinclude, $footer, $page, $db, $parser, $modcp_nav, $gossip_allvictims, $rumour, $rumour_date, $rumourmonger, $gossip_id;
     $lang->load('gossip');
-    require_once MYBB_ROOT . "inc/class_parser.php";;
+    require_once MYBB_ROOT . "inc/class_parser.php";
+    ;
     $parser = new postParser;
     $options = array(
         "allow_html" => 1,
@@ -1015,7 +1103,7 @@ function gossip_modcp()
     /*
      * Alle noch nicht angenommenen Gerüchte
      */
-    if($mybb->get_input('action') == 'gossip') {
+    if ($mybb->get_input('action') == 'gossip') {
         // Do something, for example I'll create a page using the hello_world_template
 
         // Add a breadcrumb
@@ -1052,6 +1140,7 @@ function gossip_modcp()
                     array_push($all_victims, $victimname);
                 }
 
+                $gossip_allvictims = "";
                 if ($count_victim > 1) {
                     $gossip_allvictims = implode(" und ", $all_victims);
                 } else {
@@ -1061,7 +1150,7 @@ function gossip_modcp()
                 $rumour = $parser->parse_message($gossip['gossip_text'], $options);
                 $form_date = strtotime($gossip['gossip_date']);
                 $rumour_date = date("d.m.Y", $form_date);
-                eval("\$gossip_bit .= \"" . $templates->get("gossip_modcp_new") . "\";");
+                eval ("\$gossip_bit .= \"" . $templates->get("gossip_modcp_new") . "\";");
             }
         } else {
             $gossip_bit = "<div class='new_gossip'>{$lang->gossip_modcp_nogossip}</div>";
@@ -1085,7 +1174,7 @@ function gossip_modcp()
                 if (class_exists('MybbStuff_MyAlerts_AlertTypeManager')) {
                     $alertType = MybbStuff_MyAlerts_AlertTypeManager::getInstance()->getByCode('gossip_alert');
                     if ($alertType != NULL && $alertType->getEnabled()) {
-                        $alert = new MybbStuff_MyAlerts_Entity_Alert((int)$victim_id, $alertType);
+                        $alert = new MybbStuff_MyAlerts_Entity_Alert((int) $victim_id, $alertType);
                         MybbStuff_MyAlerts_AlertManager::getInstance()->addAlert($alert);
                     }
                 }
@@ -1097,7 +1186,7 @@ function gossip_modcp()
             if (class_exists('MybbStuff_MyAlerts_AlertTypeManager')) {
                 $alertType = MybbStuff_MyAlerts_AlertTypeManager::getInstance()->getByCode('gossip_ok');
                 if ($alertType != NULL && $alertType->getEnabled()) {
-                    $alert = new MybbStuff_MyAlerts_Entity_Alert((int)$gossip_uid, $alertType);
+                    $alert = new MybbStuff_MyAlerts_Entity_Alert((int) $gossip_uid, $alertType);
                     MybbStuff_MyAlerts_AlertManager::getInstance()->addAlert($alert);
                 }
             }
@@ -1119,7 +1208,7 @@ function gossip_modcp()
             if (class_exists('MybbStuff_MyAlerts_AlertTypeManager')) {
                 $alertType = MybbStuff_MyAlerts_AlertTypeManager::getInstance()->getByCode('gossip_refuse');
                 if ($alertType != NULL && $alertType->getEnabled()) {
-                    $alert = new MybbStuff_MyAlerts_Entity_Alert((int)$gossip_uid, $alertType);
+                    $alert = new MybbStuff_MyAlerts_Entity_Alert((int) $gossip_uid, $alertType);
                     MybbStuff_MyAlerts_AlertManager::getInstance()->addAlert($alert);
                 }
             }
@@ -1129,13 +1218,14 @@ function gossip_modcp()
         }
 
 
-        eval("\$page = \"" . $templates->get("gossip_modcp") . "\";");
+        eval ("\$page = \"" . $templates->get("gossip_modcp") . "\";");
         output_page($page);
 
     }
 }
 
-function gossip_alerts() {
+function gossip_alerts()
+{
     global $mybb, $lang;
     $lang->load('gossip');
     /**
