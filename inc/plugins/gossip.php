@@ -19,8 +19,8 @@ $plugins->add_hook('member_profile_start', 'gossip_member_profile');
 function gossip_info()
 {
     return array(
-        "name" => "Gerüchteküche",
-        "description" => "Mit diesen Plugin können Charaktere Gerüchte in die Welt setzen.",
+        "name" => "Rumor mill",
+        "description" => "This plugin allows characters to spread rumors.",
         "website" => "",
         "author" => "Ales",
         "authorsite" => "https://github.com/Ales12",
@@ -56,8 +56,8 @@ function gossip_install()
 
     $setting_group = array(
         'name' => 'gossip',
-        'title' => 'Gerüchteküche Einstellungen',
-        'description' => 'Hier kannst du alle Einstellungen für die Gerüchteküche machen.',
+        'title' => 'Rumour mill settings',
+        'description' => 'Here you can configure all the settings for the rumor mill..',
         'disporder' => 2,
         'isdefault' => 0
     );
@@ -68,23 +68,23 @@ function gossip_install()
     $setting_array = array(
         // A text setting
         'gossip_group' => array(
-            'title' => 'Gruppenauswahl möglich?',
-            'description' => 'Soll es bei den Gerüchten möglich sein, die Gruppen auszuwählen, die explizit von dem Gerücht wissen?',
+            'title' => 'Group selection possible?',
+            'description' => 'Should it be possible to select the groups that are explicitly aware of the rumor??',
             'optionscode' => 'yesno',
             'value' => 0,
             'disporder' => 1
         ),
         // A select box
         'gossip_groupname' => array(
-            'title' => 'Gruppenauswahl',
-            'description' => 'Trage hier ein, welche Gruppen betroffen sein können:',
+            'title' => 'Group selection',
+            'description' => 'Enter here which groups may be affected:',
             'optionscode' => 'text',
             'value' => 'Hogwarts, Erwachsene allgemein, Todesser, Aversio',
             'disporder' => 2
         ),
         'gossip_from' => array(
-            'title' => 'Gerüchtestreuer',
-            'description' => 'Wer soll das Gerücht streuen? Trage hier einen extra Namen ein, wenn die gestreuten Charaktere anonym bleiben sollen:',
+            'title' => 'Rumor spreader',
+            'description' => 'Who should spread the rumor? Enter an extra name here if the characters spreading the rumor should remain anonymous.:',
             'optionscode' => 'text',
             'value' => '',
             'disporder' => 3
@@ -1398,3 +1398,4 @@ function gossip_alerts()
         );
     }
 }
+
