@@ -233,7 +233,7 @@ if(use_xmlhttprequest == "1")
 	<div class="form_flex">
 	<div class="form_box">
 		<div class="form_title">{$lang->gossip_text}</div>
-		<textarea placeholder="trage hier dein Gerücht ein" name="gossip" id="gossip" rows="3" cols="50" required></textarea>
+		<textarea placeholder="Enter your rumor here" name="gossip" id="gossip" rows="3" cols="50" required></textarea>
 	</div>
 					<div class="form_box">
 		<div class="form_title">{$lang->gossip_date}</div>
@@ -1398,4 +1398,5 @@ function gossip_alerts()
         );
     }
 }
+
 
